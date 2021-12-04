@@ -2,7 +2,8 @@ import PeopleDetection
 import threading
 import ImageProvider
 import time
-import LocalInference
+# import LocalInference
+import TfApiDetector
 import json
 
 
@@ -16,7 +17,7 @@ class LocalDetection(PeopleDetection.PeopleDetection):
         recognizer_thread.start()
 
     def __get_recognize_image(self):
-        local_inference = LocalInference.LocalInference()
+        local_inference = TfApiDetector.TfApiDetector()
         image_provider = ImageProvider.Context(self.cam)
 
         while True:
@@ -27,7 +28,9 @@ class LocalDetection(PeopleDetection.PeopleDetection):
             np_image = image_provider.get_the_next_image()
 
             start_api = time.time()
-            detection_results = local_inference.do_next_image(np_image)
+            detection_results = local_inference.run_inference(np_image)
+
+            print(detection_results)
 
             if detection_results is not None:
                 if 'Read timed out' in detection_results or 'Max retries exceeded' in detection_results:
@@ -36,7 +39,7 @@ class LocalDetection(PeopleDetection.PeopleDetection):
                     self.logger.info("Inference turnaround time: " + str(time.time() - start_api))
 
                     self.output_time = time.time()
-                    self.output_image = self.draw_bbxs(detection_results, np_image, local_inference.get_categorie_names())
+                    self.output_image = np_image #self.draw_bbxs(detection_results, np_image, local_inference.get_categorie_names())
 
                     self.logger.info('Total recognize time: ' + str(time.time() - start))
                     # self.logger.debug(detection_results)
@@ -44,7 +47,7 @@ class LocalDetection(PeopleDetection.PeopleDetection):
             if detection_results is None:
                 self.logger.error('None from get_result')
 
-            time.sleep(3)
+            # time.sleep(3)
 
     def draw_bbxs(self, image_results, np_image, class_names):
 

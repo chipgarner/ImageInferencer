@@ -1,4 +1,6 @@
-# README #git add a
+# README #git
+
+This needs mask_rcnn_coco.h5 in the MakRCNN directory, or another trained network.
 
 ### Uses OpenCV
 

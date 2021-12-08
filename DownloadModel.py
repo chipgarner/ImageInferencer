@@ -18,5 +18,5 @@ def download_model(model_name):
 # http://download.tensorflow.org/models/object_detection/tf2/20200711/mask_rcnn_inception_resnet_v2_1024x1024_coco17_gpu-8.tar.gz
 # http://download.tensorflow.org/models/object_detection/tf2/20200711/centernet_hg104_512x512_kpts_coco17_tpu-32.tar.gz
 # http://download.tensorflow.org/models/object_detection/tf2/20200711/ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8.tar.gz
-MODEL_NAME = 'ssd_mobilenet_v2_fpnlite_640x640_coco17_tpu-8'
+MODEL_NAME = 'centernet_hg104_512x512_kpts_coco17_tpu-32'
 PATH_TO_MODEL_DIR = download_model(MODEL_NAME)

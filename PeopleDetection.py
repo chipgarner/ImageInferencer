@@ -1,11 +1,12 @@
+import logging
+import time
+
 import cv2
 from sentrycommon import Logger
-import logging
 
 
 class PeopleDetection:
     def __init__(self, image_getter):
-
         LogSetup = Logger.Logger_Setup()
         self.logger = logging.getLogger(__name__)
         LogSetup.set_level(self.logger)
@@ -16,7 +17,6 @@ class PeopleDetection:
         self.output_time = 0
 
     def draw_bounding_box(self, bounding_box, label, color, np_image):
-
         top = bounding_box[0]
         left = bounding_box[1]
         bottom = bounding_box[2]
@@ -37,6 +37,13 @@ class PeopleDetection:
         bottom = int(height * bbx[2])
         right = int(width * bbx[3])
         return top, left, bottom, right
+
+    def save_image_file(self, np_image):
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        path = 'OutImages/' + timestr + '.jpg'
+
+        save_image = cv2.cvtColor(np_image, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(path, save_image)
 
 
 if __name__ == '__main__':

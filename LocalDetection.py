@@ -52,7 +52,7 @@ class LocalDetection(PeopleDetection.PeopleDetection):
 
         use_classes = ['BG', 'person', 'bird',
                        'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
-                       'zebra', 'giraffe', 'teddy bear']
+                       'zebra', 'giraffe', 'teddy bear', 'mouse']
 
         if type(image_results) is dict or type(image_results) is list:
             results = image_results
@@ -65,11 +65,7 @@ class LocalDetection(PeopleDetection.PeopleDetection):
 
         categories = []
         for id in results['detection_classes']:
-            if id > 80:
-                print('Class id is ' + str(id) + ' ?????')
-                return np_image
-            else:
-                categories.append(class_names[id - 1])
+            categories.append(class_names[id])
 
         self.logger.debug('Categories found: ' + str(categories))
 
@@ -77,11 +73,11 @@ class LocalDetection(PeopleDetection.PeopleDetection):
             bboxes = results['detection_boxes']
 
             for index, bbx in enumerate(bboxes):
-                if index < results['num_detections']:
-                    label = categories[index]
-                    if label in use_classes:
-                        color = (255, 0, 0)
-                        self.draw_bounding_box(bbx, label, color, np_image)
+                label = categories[index]
+                if label in use_classes:
+                    color = (255, 0, 0)
+                    self.draw_bounding_box(bbx, label, color, np_image)
+                    self.save_image_file(np_image)
         else:
             self.logger.error('*****************************  No Bounding Boxes Found *********************')
         return np_image

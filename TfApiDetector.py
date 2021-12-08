@@ -17,7 +17,7 @@ class TfApiDetector:
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
 
-        PATH_TO_MODEL_DIR = '/home/jkg/.keras/datasets/mask_rcnn_inception_resnet_v2_1024x1024_coco17_gpu-8'
+        PATH_TO_MODEL_DIR = '/home/jkg/.keras/datasets/centernet_hg104_512x512_kpts_coco17_tpu-32'
         self.PATH_TO_SAVED_MODEL = PATH_TO_MODEL_DIR + "/saved_model"
 
         self.class_names = self.get_categorie_names()
@@ -45,9 +45,9 @@ class TfApiDetector:
         PATH_TO_LABELS = '/home/jkg/.keras/datasets/mscoco_label_map.pbtxt'
         category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS,
                                                                         use_display_name=True)
-        class_names = []
+        class_names = {}
         for num in category_index:
-            class_names.append(category_index[num]['name'])
+            class_names.update({category_index[num]['id']: category_index[num]['name']})
 
         return class_names
 

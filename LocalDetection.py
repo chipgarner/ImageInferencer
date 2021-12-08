@@ -2,7 +2,6 @@ import PeopleDetection
 import threading
 import ImageProvider
 import time
-# import LocalInference
 import TfApiDetector
 import json
 
@@ -39,7 +38,7 @@ class LocalDetection(PeopleDetection.PeopleDetection):
                     self.logger.info("Inference turnaround time: " + str(time.time() - start_api))
 
                     self.output_time = time.time()
-                    self.output_image = np_image #self.draw_bbxs(detection_results, np_image, local_inference.get_categorie_names())
+                    self.output_image = self.draw_bbxs(detection_results, np_image, local_inference.get_class_names())
 
                     self.logger.info('Total recognize time: ' + str(time.time() - start))
                     # self.logger.debug(detection_results)
@@ -65,20 +64,24 @@ class LocalDetection(PeopleDetection.PeopleDetection):
                 raise(ex)
 
         categories = []
-        for id in results['class_ids']:
-            categories.append(class_names[id])
+        for id in results['detection_classes']:
+            if id > 80:
+                print('Class id is ' + str(id) + ' ?????')
+                return np_image
+            else:
+                categories.append(class_names[id - 1])
 
         self.logger.debug('Categories found: ' + str(categories))
 
-        if 'rois' in results:
-            bboxes = results['rois']
+        if 'detection_boxes' in results:
+            bboxes = results['detection_boxes']
 
             for index, bbx in enumerate(bboxes):
-                label = categories[index]
-                if label in use_classes:
-                    color = (255, 0, 0)
-                    self.draw_bounding_box(bbx, label, color, np_image)
-                    #TODO save the image. Create motion triggeered batches and save surrounding images
+                if index < results['num_detections']:
+                    label = categories[index]
+                    if label in use_classes:
+                        color = (255, 0, 0)
+                        self.draw_bounding_box(bbx, label, color, np_image)
         else:
             self.logger.error('*****************************  No Bounding Boxes Found *********************')
         return np_image

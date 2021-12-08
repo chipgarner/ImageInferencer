@@ -22,10 +22,21 @@ class PeopleDetection:
         bottom = bounding_box[2]
         right = bounding_box[3]
 
+        if not isinstance(top, int):
+            top, left, bottom, right = self.convert_bbx_to_pixels(bounding_box, np_image.shape)
+
         cv2.rectangle(np_image, (left, top), (right, bottom), color, 2)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(np_image, label, (left, top - 5), font, 1, color, 2, cv2.LINE_AA)
+
+    def convert_bbx_to_pixels(self, bbx, image_shape):
+        height, width, _ = image_shape
+        top = int(height * bbx[0])
+        left = int(width * bbx[1])
+        bottom = int(height * bbx[2])
+        right = int(width * bbx[3])
+        return top, left, bottom, right
 
 
 if __name__ == '__main__':

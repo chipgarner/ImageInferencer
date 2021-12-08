@@ -1,7 +1,5 @@
 import os
 import time
-
-import matplotlib
 import numpy as np
 import tensorflow as tf
 from PIL import Image
@@ -19,24 +17,21 @@ class TfApiDetector:
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
 
-        PATH_TO_MODEL_DIR = '/home/jkg/.keras/datasets/ssd_mobilenet_v2_coco_2018_03_29'
-        PATH_TO_LABELS = '/home/jkg/.keras/datasets/mscoco_label_map.pbtxt'
+        PATH_TO_MODEL_DIR = '/home/jkg/.keras/datasets/mask_rcnn_inception_resnet_v2_1024x1024_coco17_gpu-8'
         self.PATH_TO_SAVED_MODEL = PATH_TO_MODEL_DIR + "/saved_model"
 
-        category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS,
-                                                                            use_display_name=True)
-
-        matplotlib.use('TkAgg')
+        self.class_names = self.get_categorie_names()
 
         self.detect_fn = None
         self.load_model()
+        self.model
 
     def load_model(self):
         print('Loading model...', end='')
         start_time = time.time()
 
-        model = tf.saved_model.load(self.PATH_TO_SAVED_MODEL)
-        self.detect_fn = model.signatures['serving_default']
+        self.model = tf.saved_model.load(self.PATH_TO_SAVED_MODEL)
+        self.detect_fn = self.model.signatures['serving_default']
 
         end_time = time.time()
         elapsed_time = end_time - start_time
@@ -47,30 +42,50 @@ class TfApiDetector:
         return np.array(Image.open(path))
 
     def get_categorie_names(self):
-        return None
+        PATH_TO_LABELS = '/home/jkg/.keras/datasets/mscoco_label_map.pbtxt'
+        category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS,
+                                                                        use_display_name=True)
+        class_names = []
+        for num in category_index:
+            class_names.append(category_index[num]['name'])
+
+        return class_names
+
+    def get_class_names(self):
+        return self.class_names
 
     def run_inference(self, image_np):
         input_tensor = tf.convert_to_tensor(image_np)
         # The model expects a batch of images, so add an axis with `tf.newaxis`.
         input_tensor = input_tensor[tf.newaxis, ...]
 
-        start_time = time.time()
         detections = self.detect_fn(input_tensor)
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print('Inference Took {} seconds'.format(elapsed_time))
 
         formatted_detections = self.format_detections(detections)
 
         return formatted_detections
 
     def format_detections(self, detections):
-        num_detections = int(detections.pop('num_detections'))
-        detections = {key: value[0, :num_detections].numpy()
-                      for key, value in detections.items()}
-        detections['num_detections'] = num_detections
+        num_detections = 0
+        formatted_detections = {'detection_scores':[], 'detection_classes': [],
+                                'detection_boxes': [], 'num_detections': 0}
+        scores = detections['detection_scores'][0].numpy()
+        for index, score in enumerate(scores):
+            if score > 0.5:
+                num_detections+= 1
+                formatted_detections['detection_scores'].append(score)
+
+                detected_class = detections['detection_classes'][0].numpy()[index]
+                formatted_detections['detection_classes'].append(detected_class.astype(np.int64))
+
+                detection_boxes = detections['detection_boxes'][0].numpy()[index]
+                formatted_detections['detection_boxes'].append(detection_boxes)
+
+    # detections = {key: value[0, :num_detections].numpy()
+    #                   for key, value in detections.items()}
+        formatted_detections['num_detections'] = num_detections
 
         # detection_classes should be ints.
-        detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
+        # detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
 
-        return detections
+        return formatted_detections

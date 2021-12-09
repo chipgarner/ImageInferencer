@@ -11,6 +11,8 @@ class LocalDetection(PeopleDetection.PeopleDetection):
         super().__init__(image_getter)
         self.people_caller = None
 
+        self.logger.setLevel('ERROR')
+
     def start_recognizing(self):
         recognizer_thread = threading.Thread(target=self.__get_recognize_image, name='recognizer')
         recognizer_thread.start()
@@ -28,8 +30,6 @@ class LocalDetection(PeopleDetection.PeopleDetection):
 
             start_api = time.time()
             detection_results = local_inference.run_inference(np_image)
-
-            print(detection_results)
 
             if detection_results is not None:
                 if 'Read timed out' in detection_results or 'Max retries exceeded' in detection_results:
@@ -50,7 +50,7 @@ class LocalDetection(PeopleDetection.PeopleDetection):
 
     def draw_bbxs(self, image_results, np_image, class_names):
 
-        use_classes = ['BG', 'person', 'bird',
+        use_classes = ['BG', 'bird',
                        'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
                        'zebra', 'giraffe', 'teddy bear', 'mouse']
 
@@ -60,7 +60,7 @@ class LocalDetection(PeopleDetection.PeopleDetection):
             try:
                 results = json.loads(image_results)
             except Exception as ex:
-                print('Error: ' + image_results)
+                self.logger.error('image_results: ' + str(image_results) + '. ' + ex)
                 raise(ex)
 
         categories = []

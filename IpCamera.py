@@ -18,9 +18,10 @@ class IpCamera(ImageProvider.ImageProvider):
         self.consecutive_wait_timeouts = 0
 
         self.frame_good = True
-        self.cv2_capture = None
         self.cam_running = True
         self.keep_running = True
+
+        self.cam_thread = None
 
         self._start_ip_camera(ip_address)
 
@@ -33,19 +34,38 @@ class IpCamera(ImageProvider.ImageProvider):
         self.response_stream = requests.get(camera_url, stream=True, timeout=5.0)
 
         if self.response_stream.status_code == 200:
-            self.cam_thread = threading.Thread(target=self.__camera_thread, name='ipcam')
-            self.cam_thread.start()
+            if self.cam_thread is None or not self.cam_thread.is_alive():
+                self.cam_thread = threading.Thread(target=self.__camera_thread, name='ipcam')
+                self.cam_thread.start()
         elif self.response_stream.status_code == 401:
             self.logger.error("Camera, admin or password wrong.")
         else:
             self.logger.error("Camera. Received unexpected status code {}".format(self.response_stream.status_code))
+
+        return self.response_stream.status_code
+
+    def camera_wait_forever(self):
+        status_code = None
+        while True:
+            try:
+                status_code = self._start_ip_camera(self.camera_url)
+            except Exception as ex:
+                self.logger.error('Exception in camera_wait_forever.  ' + str(ex))
+
+            if status_code == 200:
+                break
+            else:
+                self.logger.error('Wait forever status code is : ' + str(status_code))
+
+            self.response_stream.close()
+            time.sleep(10)
 
     def get_next_image(self) -> bytes:
 
         if not self.new_image.wait(2.0):  # 2.0 is 2 second wait timeout if no frames come in
             self.consecutive_wait_timeouts += 1
             if self.consecutive_wait_timeouts > 9:
-                self.logger.warning(str(self.consecutive_wait_timeouts) + ' consecutive wait timeouts.')
+                self.logger.error(str(self.consecutive_wait_timeouts) + ' consecutive wait timeouts.')
                 self.consecutive_wait_timeouts = 0
             self.frame_good = False
 
@@ -66,12 +86,11 @@ class IpCamera(ImageProvider.ImageProvider):
             try:
                 chunk = next(self.response_stream.iter_content(chunk_size=2048))
             except Exception as ex:
-                self.logger.error('Exception in camera read loop ' + str(ex))
-                self.logger.error('Attempting to recover')
+                self.logger.error('Exception in camera read loop, attempting recovery.  ' + str(ex))
 
                 self.response_stream.close()
                 time.sleep(0.3)
-                self.response_stream = requests.get(self.camera_url, stream=True, timeout=5.0)
+                self.camera_wait_forever()
                 time.sleep(0.5)
 
                 continue
@@ -90,7 +109,7 @@ class IpCamera(ImageProvider.ImageProvider):
                         self.__got_goodframe()
                 except Exception as ex:
                     # Just keeps trying
-                    self.logger.error('Exception in cv2.imdecode ' + str(ex))
+                    self.logger.error('Exception caught in cv2.imdecode ' + str(ex))
 
         self.latest_image = None
         self.logger.error('Camera thread stopping')

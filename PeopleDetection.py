@@ -25,7 +25,7 @@ class PeopleDetection:
         if not isinstance(top, int):
             top, left, bottom, right = self.convert_bbx_to_pixels(bounding_box, np_image.shape)
 
-        cv2.rectangle(np_image, (left, top), (right, bottom), color, 2)
+        # cv2.rectangle(np_image, (left, top), (right, bottom), color, 2)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(np_image, label, (left, top - 5), font, 1, color, 2, cv2.LINE_AA)

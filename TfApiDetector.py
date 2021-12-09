@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 import numpy as np
@@ -8,8 +9,8 @@ from object_detection.utils import label_map_util
 
 class TfApiDetector:
     def __init__(self):
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow logging (1)
-
+        logging.disable(logging.WARNING)
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logging (1)
         tf.get_logger().setLevel('ERROR')  # Suppress TensorFlow logging (2)
 
         # Enable GPU dynamic memory allocation
@@ -24,10 +25,10 @@ class TfApiDetector:
 
         self.detect_fn = None
         self.load_model()
-        self.model
+        self.model = None
 
     def load_model(self):
-        print('Loading model...', end='')
+        # print('Loading model...', end='')
         start_time = time.time()
 
         self.model = tf.saved_model.load(self.PATH_TO_SAVED_MODEL)
@@ -35,7 +36,7 @@ class TfApiDetector:
 
         end_time = time.time()
         elapsed_time = end_time - start_time
-        print('Done! Took {} seconds'.format(elapsed_time))
+        # print('Done! Took {} seconds'.format(elapsed_time))
 
     @staticmethod
     def load_image_into_numpy_array(path):
@@ -81,11 +82,6 @@ class TfApiDetector:
                 detection_boxes = detections['detection_boxes'][0].numpy()[index]
                 formatted_detections['detection_boxes'].append(detection_boxes)
 
-    # detections = {key: value[0, :num_detections].numpy()
-    #                   for key, value in detections.items()}
         formatted_detections['num_detections'] = num_detections
-
-        # detection_classes should be ints.
-        # detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
 
         return formatted_detections
